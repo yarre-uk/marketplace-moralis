@@ -5,7 +5,7 @@ import { OrderService } from './order.service';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  @Get('filteredOrders/:walletAddress')
+  @Get('filtered/:walletAddress')
   getAll(@Param('walletAddress') walletAddress: string) {
     return this.orderService.getFilteredOrders(walletAddress);
   }

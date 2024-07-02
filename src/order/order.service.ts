@@ -26,9 +26,14 @@ export class OrderService {
       }
     `;
 
-    return this.graphService.query<QueryOrderResult>(queryUserQueries, {
-      address,
-    });
+    const res = await this.graphService.query<QueryOrderResult>(
+      queryUserQueries,
+      {
+        address,
+      },
+    );
+
+    return res.orders;
   }
 
   async getForSale() {
@@ -46,7 +51,10 @@ export class OrderService {
       }
     `;
 
-    return this.graphService.query<QueryOrderResult>(queryOrdersForSale);
+    const res =
+      await this.graphService.query<QueryOrderResult>(queryOrdersForSale);
+
+    return res.orders;
   }
 
   async getFilteredOrders(walletAddress: string) {
