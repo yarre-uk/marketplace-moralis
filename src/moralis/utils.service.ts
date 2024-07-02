@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Moralis from 'moralis';
 
 @Injectable()
-export class MoralisService implements OnModuleInit {
+export class UtilsService implements OnModuleInit {
   constructor(private configService: ConfigService) {}
 
   async onModuleInit() {

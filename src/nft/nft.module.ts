@@ -7,5 +7,6 @@ import { ConfigModule } from '@nestjs/config';
   imports: [ConfigModule],
   controllers: [NFTController],
   providers: [NFTService],
+  exports: [NFTService],
 })
 export class NFTModule {}
