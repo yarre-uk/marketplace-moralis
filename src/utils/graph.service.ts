@@ -26,7 +26,7 @@ export class GraphQLClientService {
   ): Promise<TResult> {
     const result = await this.apolloClient.query({
       query: query,
-      variables,
+      variables: variables ?? {},
     });
     return result.data;
   }

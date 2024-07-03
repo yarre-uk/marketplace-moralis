@@ -6,6 +6,6 @@ import { GraphQLClientService } from './graph.service';
 @Module({
   imports: [ConfigModule],
   providers: [UtilsService, GraphQLClientService],
-  exports: [GraphQLClientService],
+  exports: [GraphQLClientService, UtilsService],
 })
 export class UtilsModule {}

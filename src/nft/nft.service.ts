@@ -2,14 +2,16 @@ import { EvmChain } from '@moralisweb3/common-evm-utils';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Moralis from 'moralis';
+import { bytes } from 'src/shared/types';
 
 @Injectable()
 export class NFTService {
   private chain = EvmChain.SEPOLIA;
-  private address: string;
+  private address: bytes;
 
   constructor(private configService: ConfigService) {
-    this.address = this.configService.get<string>('NFT_CONTRACT_ADDRESS');
+    this.address =
+      this.configService.get<bytes>('NFT_CONTRACT_ADDRESS') ?? '0x';
   }
 
   async getAll() {
