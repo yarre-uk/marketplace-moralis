@@ -1,6 +1,7 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { bytes } from 'src/shared/types';
+import { CancelOrderDto, PrepareOrderDto } from './models/dtos';
 
 @Controller('order')
 export class OrderController {
@@ -21,13 +22,17 @@ export class OrderController {
     return this.orderService.getForAddress(walletAddress);
   }
 
-  // @Post('prepare/process')
-  // async prepareOrder(@Body() body: any) {
-  //   return this.orderService.prepareProcessOrder(...body);
-  // }
+  @Post('prepare/process')
+  async prepareOrder(@Body() dto: PrepareOrderDto) {
+    return this.orderService.prepareProcessOrder(
+      dto.address,
+      dto.sellOrderId,
+      dto.buyOrderId,
+    );
+  }
 
-  // @Get('prepare/cancel/:orderId')
-  // async prepareCancelOrder(@Body() body: any) {
-  //   return this.orderService.prepareCancelOrder(orderId);
-  // }
+  @Get('prepare/cancel/:orderId')
+  async prepareCancelOrder(@Body() dto: CancelOrderDto) {
+    return this.orderService.prepareCancelOrder(dto.address, dto.orderId);
+  }
 }
