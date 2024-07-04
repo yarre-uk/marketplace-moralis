@@ -15,8 +15,19 @@ export class OrderController {
   getForSale() {
     return this.orderService.getForSale();
   }
+
   @Get('user-orders/:walletAddress')
   getUserOrders(@Param('walletAddress') walletAddress: bytes) {
     return this.orderService.getForAddress(walletAddress);
   }
+
+  // @Post('prepare/process')
+  // async prepareOrder(@Body() body: any) {
+  //   return this.orderService.prepareProcessOrder(...body);
+  // }
+
+  // @Get('prepare/cancel/:orderId')
+  // async prepareCancelOrder(@Body() body: any) {
+  //   return this.orderService.prepareCancelOrder(orderId);
+  // }
 }

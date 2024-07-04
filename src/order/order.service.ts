@@ -3,35 +3,19 @@ import { Injectable } from '@nestjs/common';
 import { GraphQLClientService } from 'src/utils/graph.service';
 import { QueryOrderResult } from './types/order';
 import { NFTService } from 'src/nft/nft.service';
+import { bytes } from 'src/shared/types';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Order, OrderStatus, OrderType } from './models/order';
-import { bytes, viemClient } from 'src/shared/types';
-import { UtilsService } from 'src/utils/utils.service';
-import { ConfigService } from '@nestjs/config';
-import { decodeFunctionResult, encodeFunctionData } from 'viem';
-import { erc721Abi } from 'src/shared/abis';
+import { Order } from './models/order';
 
 @Injectable()
 export class OrderService {
-  private viemClient: viemClient;
-  private wethAddress: bytes;
-  private erc721Address: bytes;
-
   constructor(
     private graphService: GraphQLClientService,
-    private configService: ConfigService,
     private nftService: NFTService,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
-    private utilsService: UtilsService,
-  ) {
-    this.viemClient = this.utilsService.getViemClient();
-    this.wethAddress =
-      this.configService.get<bytes>('WETH_CONTRACT_ADDRESS') ?? '0x';
-    this.erc721Address =
-      this.configService.get<bytes>('ERC721_CONTRACT_ADDRESS') ?? '0x';
-  }
+  ) {}
 
   async getForAddress(address: bytes) {
     const queryUserQueries = gql`
@@ -125,80 +109,143 @@ export class OrderService {
       },
     );
 
-    const buyOrdersResult = await this.graphService.query<QueryOrderResult>(
+    const _buyOrdersResult = await this.graphService.query<QueryOrderResult>(
       queryBuyOrders,
       { nftIds },
     );
 
-    if (!buyOrdersResult || !idsResult) {
+    if (!_buyOrdersResult || !idsResult) {
       return [];
     }
 
     const sellOrderNftIds = new Set(
       idsResult?.orders?.map((order) => order.nftId),
     );
-    const filteredBuyOrders = buyOrdersResult?.orders?.filter((order) =>
+    const filtered_buyOrders = _buyOrdersResult?.orders?.filter((order) =>
       sellOrderNftIds.has(order.nftId),
     );
 
-    return filteredBuyOrders;
+    return filtered_buyOrders;
   }
 
-  async createOrder({
-    nftId,
-    orderType,
-    price,
-    sender,
-  }: {
-    sender: bytes;
-    orderType: OrderType;
-    price: bigint;
-    nftId: bigint;
-  }) {
-    const blockNumber = await this.viemClient.getBlockNumber();
-
-    const ownerOfCalldata = await this.viemClient.call({
-      to: this.erc721Address,
-      data: encodeFunctionData({
-        abi: erc721Abi,
-        functionName: 'ownerOf',
-        args: [nftId],
-      }),
-    });
-
-    if (!ownerOfCalldata.data) {
-      throw new Error('Error fetching owner of NFT');
-    }
-
-    const ownerOfNft = decodeFunctionResult({
-      abi: erc721Abi,
-      functionName: 'ownerOf',
-      data: ownerOfCalldata.data,
-    });
-
-    if (ownerOfNft !== sender) {
-      throw new Error('Sender does not own the NFT');
-    }
-
+  async createOrder(id: bytes, sender: bytes, proof: bytes) {
     const order = new Order({
-      nftId,
-      orderType,
-      price,
+      id,
       sender,
-      orderStatus: OrderStatus.Created,
-      createdAt: blockNumber,
+      signature: proof,
     });
-
     const res = await this.orderRepository.save(order);
 
     return res;
   }
 
-  cancelCreatedOrder(orderId: bytes) {
+  async processOrder(sellOrderId: bytes, buyOrderId: bytes) {
+    if (!this.orderRepository.existsBy({ id: sellOrderId })) {
+      throw new Error('Sell order does not exist');
+    }
+    if (!this.orderRepository.existsBy({ id: buyOrderId })) {
+      throw new Error('Buy order does not exist');
+    }
+
+    return Promise.all([
+      this.orderRepository.delete({ id: sellOrderId }),
+      this.orderRepository.delete({ id: buyOrderId }),
+    ]);
+  }
+
+  async cancelOrder(orderId: bytes) {
     if (!this.orderRepository.existsBy({ id: orderId })) {
       throw new Error('Order does not exist');
     }
 
-    this.orderRepository.delete({ id: orderId });
+    return this.orderRepository.delete({ id: orderId });
+  }
+
+  async prepareProcessOrder(
+    address: bytes,
+    sellOrderId: bytes,
+    buyOrderId: bytes,
+  ) {
+    const sellOrder = await this.orderRepository.findOneByOrFail({
+      id: sellOrderId,
+      sender: address,
+    });
+    const buyOrder = await this.orderRepository.findOneByOrFail({
+      id: buyOrderId,
+    });
+
+    const queryOrders = gql`
+      query ($nftIds: [ID!]) {
+        orders(where: { orderStatus: 0, id_in: $nftIds }) {
+          id
+          sender
+          orderType
+          orderStatus
+          price
+          nftId
+          createdAt
+        }
+      }
+    `;
+
+    const res = await this.graphService.query<QueryOrderResult>(queryOrders, {
+      nftIds: [sellOrder.id, buyOrder.id],
+    });
+
+    if (!res.orders || res.orders.length !== 2) {
+      throw new Error('Order not found');
+    }
+
+    const sellOrderResult = res.orders.find(
+      (order) => order.id === sellOrderId,
+    );
+    const buyOrderResult = res.orders.find((order) => order.id === buyOrderId);
+
+    if (!sellOrderResult || !buyOrderResult) {
+      throw new Error('Order not found');
+    }
+
+    return {
+      sellOrderId,
+      buyOrderId,
+      sellSignature: sellOrder.signature,
+      buySignature: buyOrder.signature,
+      sellOrder: sellOrderResult,
+      buyOrder: buyOrderResult,
+    };
+  }
+
+  async prepareCancelOrder(address: bytes, orderId: bytes) {
+    const order = await this.orderRepository.findOneByOrFail({
+      id: orderId,
+      sender: address,
+    });
+
+    const queryOrder = gql`
+      query ($orderId: ID!) {
+        orders(where: { orderStatus: 0, id: $orderId }) {
+          id
+          sender
+          orderType
+          orderStatus
+          price
+          nftId
+          createdAt
+        }
+      }
+    `;
+
+    const res = await this.graphService.query<QueryOrderResult>(queryOrder, {
+      orderId,
+    });
+
+    if (!res.orders || res.orders.length !== 1) {
+      throw new Error('Order not found');
+    }
+
+    return {
+      signature: order.signature,
+      order: res.orders[0],
+    };
   }
 }
