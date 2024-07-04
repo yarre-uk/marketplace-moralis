@@ -128,38 +128,38 @@ export class OrderService {
     return filtered_buyOrders;
   }
 
-  async createOrder(id: bytes, sender: bytes, proof: bytes) {
-    const order = new Order({
-      id,
-      sender,
-      signature: proof,
-    });
-    const res = await this.orderRepository.save(order);
+  // async createOrder(id: bytes, sender: bytes, proof: bytes) {
+  //   const order = new Order({
+  //     id,
+  //     sender,
+  //     signature: proof,
+  //   });
+  //   const res = await this.orderRepository.save(order);
 
-    return res;
-  }
+  //   return res;
+  // }
 
-  async processOrder(sellOrderId: bytes, buyOrderId: bytes) {
-    if (!this.orderRepository.existsBy({ id: sellOrderId })) {
-      throw new Error('Sell order does not exist');
-    }
-    if (!this.orderRepository.existsBy({ id: buyOrderId })) {
-      throw new Error('Buy order does not exist');
-    }
+  // async processOrder(sellOrderId: bytes, buyOrderId: bytes) {
+  //   if (!this.orderRepository.existsBy({ id: sellOrderId })) {
+  //     throw new Error('Sell order does not exist');
+  //   }
+  //   if (!this.orderRepository.existsBy({ id: buyOrderId })) {
+  //     throw new Error('Buy order does not exist');
+  //   }
 
-    return Promise.all([
-      this.orderRepository.delete({ id: sellOrderId }),
-      this.orderRepository.delete({ id: buyOrderId }),
-    ]);
-  }
+  //   return Promise.all([
+  //     this.orderRepository.delete({ id: sellOrderId }),
+  //     this.orderRepository.delete({ id: buyOrderId }),
+  //   ]);
+  // }
 
-  async cancelOrder(orderId: bytes) {
-    if (!this.orderRepository.existsBy({ id: orderId })) {
-      throw new Error('Order does not exist');
-    }
+  // async cancelOrder(orderId: bytes) {
+  //   if (!this.orderRepository.existsBy({ id: orderId })) {
+  //     throw new Error('Order does not exist');
+  //   }
 
-    return this.orderRepository.delete({ id: orderId });
-  }
+  //   return this.orderRepository.delete({ id: orderId });
+  // }
 
   async prepareProcessOrder(
     address: bytes,
@@ -175,8 +175,8 @@ export class OrderService {
     });
 
     const queryOrders = gql`
-      query ($nftIds: [ID!]) {
-        orders(where: { orderStatus: 0, id_in: $nftIds }) {
+      query ($ids: [ID!]) {
+        orders(where: { orderStatus: 0, id_in: $ids }) {
           id
           sender
           orderType
@@ -184,6 +184,7 @@ export class OrderService {
           price
           nftId
           createdAt
+          signature
         }
       }
     `;
@@ -208,8 +209,8 @@ export class OrderService {
     return {
       sellOrderId,
       buyOrderId,
-      sellSignature: sellOrder.signature,
-      buySignature: buyOrder.signature,
+      sellSignature: sellOrderResult.signature,
+      buySignature: buyOrderResult.signature,
       sellOrder: sellOrderResult,
       buyOrder: buyOrderResult,
     };

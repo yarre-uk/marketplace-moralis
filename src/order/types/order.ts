@@ -6,6 +6,7 @@ export type Order = {
   price?: bigint;
   nftId?: bigint;
   createdAt?: bigint;
+  signature?: string;
 };
 
 export type QueryOrderResult = {

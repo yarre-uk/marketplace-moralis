@@ -104,6 +104,25 @@ export const marketplaceAbi = [
       {
         indexed: true,
         internalType: 'address',
+        name: 'executer',
+        type: 'address',
+      },
+    ],
+    name: 'OrderCanceled',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'bytes32',
+        name: 'id',
+        type: 'bytes32',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
         name: 'sender',
         type: 'address',
       },
@@ -131,6 +150,12 @@ export const marketplaceAbi = [
         name: 'createdAt',
         type: 'uint256',
       },
+      {
+        indexed: false,
+        internalType: 'bytes',
+        name: 'signature',
+        type: 'bytes',
+      },
     ],
     name: 'OrderCreated',
     type: 'event',
@@ -141,20 +166,14 @@ export const marketplaceAbi = [
       {
         indexed: true,
         internalType: 'bytes32',
-        name: 'id',
+        name: 'sellOrderId',
         type: 'bytes32',
       },
       {
         indexed: true,
-        internalType: 'address',
-        name: 'executer',
-        type: 'address',
-      },
-      {
-        indexed: true,
-        internalType: 'enum OrderStatus',
-        name: 'state',
-        type: 'uint8',
+        internalType: 'bytes32',
+        name: 'buyOrderId',
+        type: 'bytes32',
       },
     ],
     name: 'OrderProcessed',
@@ -316,11 +335,6 @@ export const marketplaceAbi = [
         name: '_signature',
         type: 'bytes',
       },
-      {
-        internalType: 'bytes',
-        name: '_ownerSignature',
-        type: 'bytes',
-      },
     ],
     name: 'cancelOrder',
     outputs: [],
@@ -367,18 +381,8 @@ export const marketplaceAbi = [
         type: 'tuple',
       },
       {
-        internalType: 'bytes32',
-        name: '_id',
-        type: 'bytes32',
-      },
-      {
         internalType: 'bytes',
-        name: '_userSignature',
-        type: 'bytes',
-      },
-      {
-        internalType: 'bytes',
-        name: '_ownerSignature',
+        name: '_signature',
         type: 'bytes',
       },
     ],
@@ -605,18 +609,13 @@ export const marketplaceAbi = [
         type: 'tuple',
       },
       {
-        internalType: 'bytes',
-        name: '_ownerSignature',
-        type: 'bytes',
-      },
-      {
         internalType: 'bytes32',
-        name: '_orderId1',
+        name: '_sellOrderId',
         type: 'bytes32',
       },
       {
         internalType: 'bytes32',
-        name: '_orderId2',
+        name: '_buyOrderId',
         type: 'bytes32',
       },
       {
