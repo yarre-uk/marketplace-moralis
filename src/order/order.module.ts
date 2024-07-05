@@ -4,16 +4,9 @@ import { OrderService } from './order.service';
 import { ConfigModule } from '@nestjs/config';
 import { UtilsModule } from 'src/utils/utils.module';
 import { NFTModule } from 'src/nft/nft.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Order } from './models/order';
 
 @Module({
-  imports: [
-    ConfigModule,
-    UtilsModule,
-    NFTModule,
-    TypeOrmModule.forFeature([Order]),
-  ],
+  imports: [ConfigModule, UtilsModule, NFTModule],
   controllers: [OrderController],
   providers: [OrderService],
 })

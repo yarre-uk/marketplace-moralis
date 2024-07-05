@@ -4,17 +4,12 @@ import { GraphQLClientService } from 'src/utils/graph.service';
 import { QueryOrderResult } from './types/order';
 import { NFTService } from 'src/nft/nft.service';
 import { bytes } from 'src/shared/types';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Order } from './models/order';
 
 @Injectable()
 export class OrderService {
   constructor(
     private graphService: GraphQLClientService,
     private nftService: NFTService,
-    @InjectRepository(Order)
-    private orderRepository: Repository<Order>,
   ) {}
 
   async getForAddress(address: bytes) {

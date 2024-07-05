@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { bytes } from 'src/shared/types';
-import { CancelOrderDto, PrepareOrderDto } from './models/dtos';
+import { CancelOrderDto, PrepareOrderDto } from './types/dtos';
 
 @Controller('order')
 export class OrderController {
