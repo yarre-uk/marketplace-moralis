@@ -25,13 +25,12 @@ export class OrderController {
   @Post('prepare/process')
   async prepareOrder(@Body() dto: PrepareOrderDto) {
     return this.orderService.prepareProcessOrder(
-      dto.address,
       dto.sellOrderId,
       dto.buyOrderId,
     );
   }
 
-  @Get('prepare/cancel/:orderId')
+  @Post('prepare/cancel')
   async prepareCancelOrder(@Body() dto: CancelOrderDto) {
     return this.orderService.prepareCancelOrder(dto.address, dto.orderId);
   }

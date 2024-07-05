@@ -128,52 +128,7 @@ export class OrderService {
     return filtered_buyOrders;
   }
 
-  // async createOrder(id: bytes, sender: bytes, proof: bytes) {
-  //   const order = new Order({
-  //     id,
-  //     sender,
-  //     signature: proof,
-  //   });
-  //   const res = await this.orderRepository.save(order);
-
-  //   return res;
-  // }
-
-  // async processOrder(sellOrderId: bytes, buyOrderId: bytes) {
-  //   if (!this.orderRepository.existsBy({ id: sellOrderId })) {
-  //     throw new Error('Sell order does not exist');
-  //   }
-  //   if (!this.orderRepository.existsBy({ id: buyOrderId })) {
-  //     throw new Error('Buy order does not exist');
-  //   }
-
-  //   return Promise.all([
-  //     this.orderRepository.delete({ id: sellOrderId }),
-  //     this.orderRepository.delete({ id: buyOrderId }),
-  //   ]);
-  // }
-
-  // async cancelOrder(orderId: bytes) {
-  //   if (!this.orderRepository.existsBy({ id: orderId })) {
-  //     throw new Error('Order does not exist');
-  //   }
-
-  //   return this.orderRepository.delete({ id: orderId });
-  // }
-
-  async prepareProcessOrder(
-    address: bytes,
-    sellOrderId: bytes,
-    buyOrderId: bytes,
-  ) {
-    const sellOrder = await this.orderRepository.findOneByOrFail({
-      id: sellOrderId,
-      sender: address,
-    });
-    const buyOrder = await this.orderRepository.findOneByOrFail({
-      id: buyOrderId,
-    });
-
+  async prepareProcessOrder(sellOrderId: bytes, buyOrderId: bytes) {
     const queryOrders = gql`
       query ($ids: [ID!]) {
         orders(where: { orderStatus: 0, id_in: $ids }) {
@@ -185,12 +140,15 @@ export class OrderService {
           nftId
           createdAt
           signature
+          nonce
         }
       }
     `;
 
+    console.log([sellOrderId, buyOrderId]);
+
     const res = await this.graphService.query<QueryOrderResult>(queryOrders, {
-      nftIds: [sellOrder.id, buyOrder.id],
+      ids: [sellOrderId, buyOrderId],
     });
 
     if (!res.orders || res.orders.length !== 2) {
@@ -207,24 +165,15 @@ export class OrderService {
     }
 
     return {
-      sellOrderId,
-      buyOrderId,
-      sellSignature: sellOrderResult.signature,
-      buySignature: buyOrderResult.signature,
-      sellOrder: sellOrderResult,
-      buyOrder: buyOrderResult,
+      sellNonce: sellOrderResult.nonce,
+      buyNonce: buyOrderResult.nonce,
     };
   }
 
   async prepareCancelOrder(address: bytes, orderId: bytes) {
-    const order = await this.orderRepository.findOneByOrFail({
-      id: orderId,
-      sender: address,
-    });
-
     const queryOrder = gql`
-      query ($orderId: ID!) {
-        orders(where: { orderStatus: 0, id: $orderId }) {
+      query ($orderId: ID!, $address: ID!) {
+        orders(where: { orderStatus: 0, id: $orderId, sender: $address }) {
           id
           sender
           orderType
@@ -232,12 +181,15 @@ export class OrderService {
           price
           nftId
           createdAt
+          signature
+          nonce
         }
       }
     `;
 
     const res = await this.graphService.query<QueryOrderResult>(queryOrder, {
       orderId,
+      address,
     });
 
     if (!res.orders || res.orders.length !== 1) {
@@ -245,7 +197,7 @@ export class OrderService {
     }
 
     return {
-      signature: order.signature,
+      nonce: res.orders[0].nonce,
       order: res.orders[0],
     };
   }
