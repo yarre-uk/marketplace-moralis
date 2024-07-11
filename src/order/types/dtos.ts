@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { bytes } from 'src/shared/types';
 
 export class PrepareOrderDto {
@@ -19,4 +19,17 @@ export class CancelOrderDto {
   @IsString()
   @IsNotEmpty()
   orderId: bytes;
+}
+
+export class PrepareOrderbookDto {
+  @IsString()
+  @IsNotEmpty()
+  tokenId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  price: string;
+
+  @IsNumber()
+  orderType: number;
 }

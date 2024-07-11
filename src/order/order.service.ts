@@ -1,7 +1,11 @@
 import { gql } from '@apollo/client/core';
 import { Injectable } from '@nestjs/common';
 import { GraphQLClientService } from 'src/utils/graph.service';
-import { QueryOrderResult } from './types/order';
+import {
+  Orderbook,
+  QueryOrderbookResult,
+  QueryOrderResult,
+} from './types/order';
 import { NFTService } from 'src/nft/nft.service';
 import { bytes } from 'src/shared/types';
 
@@ -195,5 +199,118 @@ export class OrderService {
       nonce: res.orders[0].nonce,
       order: res.orders[0],
     };
+  }
+
+  async getOrderbooks() {
+    const queryOrderbooks = gql`
+      query {
+        buyOrders: orderbooks(
+          where: { processed: false, orderType: 0 }
+          orderBy: price
+          orderDirection: asc
+        ) {
+          id
+          amount
+          sender
+          tokenId
+          price
+          createdAt
+          orderType
+        }
+        sellOrders: orderbooks(
+          where: { processed: false, orderType: 1 }
+          orderBy: price
+          orderDirection: desc
+        ) {
+          id
+          amount
+          sender
+          tokenId
+          price
+          createdAt
+          orderType
+        }
+      }
+    `;
+
+    const res = await this.graphService.query<{
+      buyOrders?: Orderbook[];
+      sellOrders?: Orderbook[];
+    }>(queryOrderbooks);
+
+    if (!res.buyOrders || !res.sellOrders) {
+      return {
+        buyOrders: [],
+        sellOrders: [],
+      };
+    }
+
+    const buyOrders = res.buyOrders.map((order) => {
+      return {
+        amount: order.amount.toString(),
+        price: order.price.toString(),
+        id: order.id,
+      };
+    });
+
+    const sellOrders = res.sellOrders.map((order) => {
+      return {
+        amount: order.amount.toString(),
+        price: order.price.toString(),
+        id: order.id,
+      };
+    });
+
+    return {
+      buyOrders,
+      sellOrders,
+    };
+  }
+
+  async prepareCreateOrderbook(
+    price: string,
+    tokenId: string,
+    orderType: number,
+  ) {
+    const queryOrderbook = gql`
+      query ($orderType: Int!, $tokenId: BigInt!, $price: BigInt!) {
+        orderbooks(
+          where: {
+            processed: false
+            orderType: $orderType
+            tokenId: $tokenId
+            price_lt: $price
+          }
+        ) {
+          id
+          price
+        }
+      }
+    `;
+
+    const res = await this.graphService.query<QueryOrderbookResult>(
+      queryOrderbook,
+      {
+        orderType,
+        tokenId,
+        price,
+      },
+    );
+
+    if (!res.orderbooks || res.orderbooks.length === 0) {
+      return '0x' + '0'.repeat(64);
+    }
+
+    const dtos = [...res.orderbooks].sort((a, b) => {
+      return Number(a.price) - Number(b.price);
+    });
+
+    console.log(dtos);
+
+    if (!dtos || dtos.length === 0) {
+      return '0x' + '0'.repeat(64);
+    }
+
+    return dtos[dtos.length - 1].id;
   }
 }

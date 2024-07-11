@@ -1,7 +1,11 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { bytes } from 'src/shared/types';
-import { CancelOrderDto, PrepareOrderDto } from './types/dtos';
+import {
+  CancelOrderDto,
+  PrepareOrderbookDto,
+  PrepareOrderDto,
+} from './types/dtos';
 
 @Controller('order')
 export class OrderController {
@@ -33,5 +37,20 @@ export class OrderController {
   @Post('prepare/cancel')
   async prepareCancelOrder(@Body() dto: CancelOrderDto) {
     return this.orderService.prepareCancelOrder(dto.address, dto.orderId);
+  }
+
+  @Get('orderbooks')
+  getOrderbooks() {
+    return this.orderService.getOrderbooks();
+  }
+
+  @Post('prepare/orderbooks')
+  async prepareOrderbooks(@Body() dto: PrepareOrderbookDto) {
+    console.log('dto ->', dto);
+    return this.orderService.prepareCreateOrderbook(
+      dto.price,
+      dto.tokenId,
+      dto.orderType,
+    );
   }
 }

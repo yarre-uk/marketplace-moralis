@@ -17,6 +17,11 @@ export class GraphQLClientService {
         uri: configService.get<string>('GRAPHQL_ENDPOINT'),
       }),
       cache: new InMemoryCache(),
+      defaultOptions: {
+        query: {
+          fetchPolicy: 'network-only',
+        },
+      },
     });
   }
 
